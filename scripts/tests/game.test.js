@@ -3,7 +3,10 @@
  * @jest-environment jsdom
  */
 
-const {game, newGame, displayScore, addTurn, lightsOn, showTurn} = require("../game");
+const {game, newGame, displayScore, addTurn, lightsOn, showTurn, playerTurn} = require("../game");
+
+//using the spy from jest to check if the alert is being called when the player does a wrong move
+jest.spyOn(window, "alert").mockImplementation(() => {});
 
 beforeAll(() => {
     let fs = require("fs");
@@ -29,9 +32,15 @@ describe("game object contains correct keys", () => {
     });
     test("expect correct buttons of choicesKeys", () => {
         expect(game.choicesKeys).toEqual(["button1", "button2", "button3", "button4"]);
-    })
+    });
     test("turnNumber exists", () => {
         expect("turnNumber" in game).toBe(true);
+    });
+    test("inProgress exist and is set to false", () => {
+        expect(game.inProgress).toEqual(false);
+    })
+    test("lastButton exist and is set to empty", () => {
+        expect(game.lastButton).toEqual("");
     })
 });
 
@@ -74,6 +83,7 @@ describe("newGame is reseting/cleaning the properties of the game", () => {
             expect(element.getAttribute("data-listener")).toEqual("true");
         }
     })
+    
 
 });
 
@@ -119,6 +129,37 @@ describe("gameplay working correctly", () => {
         game.turnNumber = 42;
         showTurn();
         expect(game.turnNumber).toBe(0);
+    })
+
+    //testing the player turn
+
+    test("score is being incremented during the game", () => {
+        //since we have something being added on the currentGame by the addTurn()
+        //we gonna assign the playeMoves as the same in the currentGame
+        //that is simutaling right clicks being made
+        game.playerMoves.push(game.currentGame[0]);
+        playerTurn();
+        expect(game.score).toBe(1);
+
+    })
+    //testing for the wrong player input
+    test("alert being displayed if the move is wrong", () => {
+        game.playerMoves.push("wrong");
+        playerTurn();
+        expect(window.alert).toBeCalledWith("Wrong answer!");
+    })
+    //test to the player not being able to click while the computer is showing the moves
+    test("the game.inProgress should be true while the computer is showing the moves", () => {
+        game.currentGame = ["button1", "button2", "button3"];
+        showTurn();
+        expect(game.inProgress).toBe(true);
+
+    })
+    test("clicking during the computer showing sequeces should fail", () => {
+        showTurn();
+        game.lastButton = "";
+        document.getElementById("button2").click();
+        expect(game.lastButton).toEqual("");
     })
 })
 
